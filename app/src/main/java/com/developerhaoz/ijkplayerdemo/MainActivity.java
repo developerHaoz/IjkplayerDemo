@@ -16,6 +16,7 @@ import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
@@ -25,12 +26,13 @@ import tv.danmaku.ijk.media.player.IjkMediaPlayer;
 public class MainActivity extends AppCompatActivity{
 
     private VideoPlayerIJK mPlayerIJK;
+    private static final String TAG = "MainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        Log.d(TAG, "onCreate() called with: savedInstanceState = [" + savedInstanceState + "]");
         findViewById(R.id.main_btn_select_video).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
