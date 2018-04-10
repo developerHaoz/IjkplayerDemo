@@ -2,13 +2,21 @@ package com.developerhaoz.ijkplayerdemo.media;
 
 import android.content.Context;
 import android.net.Uri;
+import android.os.Build;
 import android.support.annotation.AttrRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.MediaController;
+import android.widget.TextView;
 
+import com.developerhaoz.ijkplayerdemo.InfoHudViewHolder;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import tv.danmaku.ijk.media.player.IMediaPlayer;
@@ -60,7 +68,15 @@ public class IjkVideoView extends FrameLayout implements MediaController.MediaPl
     private int mVideoSarNum;
     private int mVideoSarDen;
 
+    private InfoHudViewHolder mHudViewHolder;
 
+    private long mPrepareStartTime = 0;
+    private long mPrepareEndTime = 0;
+
+    private long mSeekStartTime = 0;
+    private long mSeekEndTime = 0;
+
+    private TextView subtitleDisplay;
 
     public IjkVideoView(@NonNull Context context) {
         super(context);
@@ -72,6 +88,81 @@ public class IjkVideoView extends FrameLayout implements MediaController.MediaPl
 
     public IjkVideoView(@NonNull Context context, @Nullable AttributeSet attrs, @AttrRes int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+    }
+
+    private void initVideoView(Context context) {
+        mAppContext = context.getApplicationContext();
+        mSettings = new Settings(mAppContext);
+
+        initBackground();
+
+        initRenders();
+
+
+    }
+
+    private boolean mEnableBackgroundPlay = false;
+
+    public void setRenderView(IRenderView rendView) {
+        if(mRenderView != null) {
+            if(mMediaPlayer != null) {
+                mMediaPlayer.setDisplay(null);
+            }
+
+            View renderView = mRenderView.getView();
+        }
+    }
+
+    public void setRender(int render) {
+        switch (render) {
+            case RENDER_NONE:
+                break;
+        }
+    }
+
+    /**
+     * 启动后台播放
+     */
+    private void initBackground() {
+        mEnableBackgroundPlay = mSettings.getEnableBackgroundPlay();
+        if(mEnableBackgroundPlay) {
+            MediaPlayerService.intentToStart(getContext());
+            mMediaPlayer = MediaPlayerService.getMediaPlayer();
+            if(mHudViewHolder != null) {
+                mHudViewHolder.setMediaPlayer(mMediaPlayer);
+            }
+        }
+    }
+
+    public static final int RENDER_NONE = 0;
+    public static final int RENDER_SURFACE_VIEW = 1;
+    public static final int RENDER_TEXTURE_VIEW = 2;
+
+    private List<Integer> mAllRenders = new ArrayList<>();
+    private int mCurrentRenderIndex = 0;
+    private int mCurrentRender = RENDER_NONE;
+
+    private void initRenders() {
+        mAllRenders.clear();
+
+        if(mSettings.getEnableSurfaceView()){
+            mAllRenders.add(RENDER_SURFACE_VIEW);
+        }
+
+        if(mSettings.getEnableTextureView() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH);{
+            mAllRenders.add(RENDER_TEXTURE_VIEW);
+        }
+
+        if(mSettings.getEnableNoView()) {
+            mAllRenders.add(RENDER_NONE);
+        }
+
+        if(mAllRenders.isEmpty()) {
+            mAllRenders.add(RENDER_SURFACE_VIEW);
+        }
+
+        mCurrentRender = mAllRenders.get(mCurrentRenderIndex);
+
     }
 
     @Override
@@ -98,6 +189,36 @@ public class IjkVideoView extends FrameLayout implements MediaController.MediaPl
     public void seekTo(int pos) {
 
     }
+
+    IRenderView.IRenderCallback mSHCallback = new IRenderView.IRenderCallback() {
+        @Override
+        public void onSurfaceCreated(@NonNull IRenderView.ISurfaceHolder holder, int width, int height) {
+            if(holder.getRenderView() != mRenderView) {
+                Log.e(TAG, "onSurfaceCreated: unmatched render callback");
+                return;
+            }
+
+            mSurfaceHolder = holder;
+            if(mMediaPlayer != null) {
+
+            }
+        }
+
+        @Override
+        public void onSurfacehanged(@NonNull IRenderView.ISurfaceHolder holder, int format, int width, int height) {
+            if(holder.getRenderView() != mRenderView) {
+                Log.e(TAG, "onSurfaceCreated: unmatched render callback\n");
+                return;
+            }
+
+            mSurfaceWidth = width;
+        }
+
+        @Override
+        public void onSurfaceDestroyed(@NonNull IRenderView.ISurfaceHolder holder) {
+
+        }
+    };
 
     @Override
     public boolean isPlaying() {
